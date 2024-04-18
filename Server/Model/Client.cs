@@ -5,7 +5,7 @@
     internal class Client 
     {
         public required string Id { get; set; }
-        public string? Servico { get; set; }
+        public string? Service { get; set; }
 
         // Criar construtor
 

@@ -112,4 +112,10 @@ class MyTcpListener
         Console.WriteLine("Sent: {0}", message);
     }
 
+    static string? FindClient(string idCliente)
+    {
+        //string[] lines = File.ReadAllLines();
+
+        return null;
+    }
 }
