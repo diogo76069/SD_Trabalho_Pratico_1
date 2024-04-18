@@ -114,7 +114,7 @@ class MyTcpListener
 
     static string? FindClient(string idCliente)
     {
-        string[] lines = File.ReadAllLines();
+        //string[] lines = File.ReadAllLines();
 
         return null;
     }
