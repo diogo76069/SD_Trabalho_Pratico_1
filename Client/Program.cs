@@ -7,7 +7,7 @@ class Client
 {
     public static void Main(string[] args)
     {
-        Connect("127.0.0.1", "Cl_0005");
+        Connect("127.0.0.1", "Cl_0001");
     }
 
     static void Connect(String server, String id)

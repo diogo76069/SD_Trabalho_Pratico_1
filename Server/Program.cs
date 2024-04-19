@@ -58,7 +58,7 @@ class MyTcpListener
 
         //Recebe um Client se encontrar e null se não encontrar
         var currentClient = FindClient(receivedMessage);
-        Tarefa? clientTask = new Tarefa();
+        Tarefa? clientTask = null;
 
         if (currentClient != null)
         {
@@ -70,7 +70,7 @@ class MyTcpListener
                 }
                 else
                 {
-                    message = "Current task: Unassigned";
+                    message = "Current task: Unassigned. Use 'TASK NEW' to assign a new task.";
                 }
             }
             else
@@ -94,24 +94,38 @@ class MyTcpListener
             receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
             Console.WriteLine("Received: {0}", receivedMessage);
 
-            string[] comando = receivedMessage.Split(' ');
+            message = string.Empty;
 
-            switch (comando[0])
+            switch (receivedMessage)
             {
-                case "TASK":
-                    if (receivedMessage == "TASK COMPLETED")
+                case "TASK NEW":
+                    if(clientTask == null) // O cliente não deve ter uma tarefa em curso
                     {
-                        //clientTask.UpdateTask("COMPLETED")
+                        clientTask = new Tarefa();
+                        if(clientTask.AssignClient(currentClient) == 0)
+                            message = $"New task:{clientTask.Description}";
+                        
+                        else
+                            message = "No tasks available";
+                       
                     }
                     else
-                    {
-                        if (receivedMessage != "TASK NEW")
-                        {
-                            // ERRO
-                        }
+                        message = "Unable to use command.";
 
-                        // Procurar tarefa disponível. É preciso usar uma lista de tarefas
+                    break;
+                case "TASK COMPLETED":
+                    if(clientTask != null)
+                    {
+                        if (clientTask.FinishTask(currentClient.Service) == 0)
+                            message = "Task state updated successfuly.";
+                        
+                        else
+                            message = "An error occurred.";
+                        
                     }
+                    else
+                        message = "You don't have an assigned task. Use TASK NEW to get a new task.";
+
                     break;
                 case "QUIT":
                     SendMessage("400 BYE", stream);
@@ -119,9 +133,11 @@ class MyTcpListener
                     stream.Close();
                     return;
                 default:
-                    SendMessage("UNRECOGNISED COMMAND", stream);
+                    message = "Unrecognised command.";
                     break;
             }
+
+            SendMessage (message, stream);
         }
     }
 
