@@ -8,28 +8,26 @@ namespace Server.Model
 {
     internal class Tarefa
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string? Description { get; set; }
         public string State { get; set; }
         public Client Cliente { get; set; }
 
-        // Fazer com que estes metodos retornem valores (talvez 1 ou 0)
-        // Para verificar que foram corridas normalmente
+        public Tarefa()
+        {
+            Description = null;
+            State = "Nao alocado";
+            Cliente = null;
+        }
 
-        public void UpdateTarefa (string newState)
+
+        public void UpdateState (string newState)
         {
             if (newState != State)
             {
                 State = newState;
             }
             return;
-        }
-
-        public Tarefa()
-        {
-            Description = null;
-            State = "UNASSIGNED";
-            Cliente = null;
         }
 
         public void AssignClient(Client novoCliente)
@@ -41,9 +39,12 @@ namespace Server.Model
             return;
         }
 
-        public int UpdateTask(string estado)
+        public void UpdateTask(string newId, string newDesc, string newState, Client newClient)
         {
-            return 0;
+            Id = newId;
+            Description = newDesc;
+            State = newState;
+            Cliente = newClient;
         }
     }
 }

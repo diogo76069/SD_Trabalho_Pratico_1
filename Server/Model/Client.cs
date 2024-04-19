@@ -4,16 +4,22 @@
 
     internal class Client 
     {
-        public required string Id { get; set; }
+        public string Id { get; set; }
         public string? Service { get; set; }
 
         public Client()
         {
             Id = string.Empty;
-            Service = string.Empty;
+            Service = null;
         }
 
-       
+        public Client(string id, string? service)
+        {
+            Id = id;
+            Service = service;
+        }
+
+
         // Criar método para atualizar o serviço, caso não tenha.
     }
 }

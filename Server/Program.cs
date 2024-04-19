@@ -1,8 +1,6 @@
 ﻿using Server.Model;
-using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Text;
 
 class MyTcpListener
@@ -44,40 +42,52 @@ class MyTcpListener
         Console.Read();
     }
     
-    static void HandleClient(TcpClient client, NetworkStream stream) //Qualquer coisa relacionada com comunicação com cliente vai aqui
+    static void HandleClient(TcpClient client, NetworkStream stream) 
     {
         Tarefa clientTask = new Tarefa();
 
         Byte[] buffer = new Byte[256];
 
+        //Manda mensagem "100 OK" inicial estabalecida no protocolo
+        SendMessage("100 OK", stream);
+
+        //Recebe o Id
         int received = stream.Read(buffer, 0, buffer.Length);     
-        var receivede = Encoding.ASCII.GetString(buffer, 0, received);
-        Console.WriteLine("Received: {0}", receivede);
+        var receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
+        Console.WriteLine("Received: {0}", receivedMessage);
 
+        //Recebe um Client se encontrar e null se não encontrar
+        var currentClient = FindClient(receivedMessage);
 
-        //Enviar mensagem inicial (100 OK) pedido no protocolo
-        SendMessage("100 OK", stream);      
+        if (currentClient != null)
+        {
+            if(currentClient.Service.Any())
+            {
+                SendMessage($"You're client {currentClient.Id}! \n Service: {currentClient.Service}", stream); //Mudar para task
+            }
+            else
+            {
+                SendMessage($"You're client {currentClient.Id}! \n Service: Unassigned", stream);
+            }
+        }
+        else
+        {
+            SendMessage("Unrecognized client. 400 BYE", stream);
+            client.Close();
+            stream.Close();
+            return;
+        }
+  
 
         while ((received = stream.Read(buffer, 0, buffer.Length)) != 0)
         {
-            string receivedMessage = Encoding.ASCII.GetString(buffer, 0, received); //Esta variavel guarda a mensagem do cliente
+            receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
             Console.WriteLine("Received: {0}", receivedMessage);
 
-            string msgType = receivedMessage.Split(' ').FirstOrDefault();
+            string[] comando = receivedMessage.Split(' ');
 
-            //É preciso fazer verificações para ver se a tarefa pode ser concluida
-            //Por exemplo para usar TASK COMPLETED é necesssário ter uma tarefa atribuida... etc.
-            //Não sei se é melhor fazer isso aqui ou no model
-
-            switch (msgType)
+            switch (comando[0])
             {
-                case "ID":
-                    //FindClient("id")
-                    //Deve haver uma fução que lê o ficheiro dos clientes e ver se existe
-                    //Se existir tem que ver em que serviço está alocado, e alocar se ainda n estiver alocado
-                    //Criar metodo FindCurrentTask("idCliente") para encontrar tarefa atual (se estiver alocada)
-                    //Enviar mensagem CURRENT TASK: UNASSIGNED/*tarefa atual*
-                    break;
                 case "TASK":
                     if (receivedMessage == "TASK COMPLETED")
                     {
@@ -94,13 +104,10 @@ class MyTcpListener
                     }
                     break;
                 case "QUIT":
-                    //Ao fechar conexão dá erro, talvez seja preciso fazer um break no while
-                    //Nesse caso é preciso meter este código no início do loop
-                    //É preciso testar
                     SendMessage("400 BYE", stream);
                     client.Close();
                     stream.Close();
-                    break;
+                    return;
                 default:
                     SendMessage("UNRECOGNISED COMMAND", stream);
                     break;
@@ -115,10 +122,23 @@ class MyTcpListener
         Console.WriteLine("Sent: {0}", message);
     }
 
-    static string? FindClient(string idCliente)
+    static Client? FindClient(string clientId)
     {
-        //string[] lines = File.ReadAllLines();
+        string[] lines = File.ReadAllLines(@"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv");
 
-        return null;
+        string clientLine = lines.FirstOrDefault(line => line.StartsWith($"{clientId},"));
+
+        if (clientLine != null)
+        {
+            string[] columns = clientLine.Split(',');
+
+            Client foundClient = new Client(columns[0], columns[1]);
+
+            return foundClient;
+        }
+        else
+        {
+            return null;
+        }
     }
 }

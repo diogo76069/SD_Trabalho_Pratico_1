@@ -19,20 +19,33 @@ class Client
             using TcpClient client = new TcpClient(server, port);
             Console.WriteLine("Connected.");
 
-            String receivedMessage = String.Empty;
-            Byte[] buffer = new Byte[256];
-
             NetworkStream stream = client.GetStream();
 
+            // Recebe 100 OK
+            Byte[] buffer = new Byte[256];
+            var received = stream.Read(buffer, 0, buffer.Length);
+            String receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
+            Console.WriteLine("Received: {0}", receivedMessage);
+
+            // Envia o Id para receber a tarefa atual
             var message = id;
             byte[] msgBytes = Encoding.ASCII.GetBytes(message);
             stream.Write(msgBytes, 0, msgBytes.Length);
+            Console.WriteLine("Sent: {0}", message);
 
             while (true)
             {
-                var received = stream.Read(buffer, 0, buffer.Length);
+                received = stream.Read(buffer, 0, buffer.Length);
                 receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
                 Console.WriteLine("Received: {0}", receivedMessage);
+
+                if(receivedMessage == "400 BYE")
+                {
+                    Console.WriteLine("Connection with server ended.");
+                    stream.Close();
+                    client.Close();
+                    return;
+                }
 
                 Console.Write("Send: ");
                 message = Console.ReadLine();
