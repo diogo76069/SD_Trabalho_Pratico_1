@@ -44,33 +44,43 @@ class MyTcpListener
     
     static void HandleClient(TcpClient client, NetworkStream stream) 
     {
-        Tarefa clientTask = new Tarefa();
 
-        Byte[] buffer = new Byte[256];
+        string message = "100 OK";
 
         //Manda mensagem "100 OK" inicial estabalecida no protocolo
-        SendMessage("100 OK", stream);
+        SendMessage(message, stream);
 
         //Recebe o Id
+        Byte[] buffer = new Byte[256];
         int received = stream.Read(buffer, 0, buffer.Length);     
         var receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
         Console.WriteLine("Received: {0}", receivedMessage);
 
         //Recebe um Client se encontrar e null se não encontrar
         var currentClient = FindClient(receivedMessage);
+        Tarefa? clientTask = new Tarefa();
 
         if (currentClient != null)
         {
             if(currentClient.Service.Any())
             {
-                SendMessage($"You're client {currentClient.Id}! \n Service: {currentClient.Service}", stream); //Mudar para task
+                if((clientTask = currentClient.FindCurrentTask()) != null)
+                {
+                    message = $"Current task: {clientTask.Description}";
+                }
+                else
+                {
+                    message = "Current task: Unassigned";
+                }
             }
             else
             {
-                SendMessage($"You're client {currentClient.Id}! \n Service: Unassigned", stream);
+                message = "No service found"; // Mudar isto para atribuir um serviço novo automaticamente se houver tempo
             }
+
+            SendMessage(message, stream);
         }
-        else
+        else // Por enquanto termina a conexão se O cliente não existir. Talvez adicionar maneira de criar um novo»
         {
             SendMessage("Unrecognized client. 400 BYE", stream);
             client.Close();
@@ -124,7 +134,8 @@ class MyTcpListener
 
     static Client? FindClient(string clientId)
     {
-        string[] lines = File.ReadAllLines(@"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv");
+        string filePath = @"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv";
+        string[] lines = File.ReadAllLines(filePath);
 
         string clientLine = lines.FirstOrDefault(line => line.StartsWith($"{clientId},"));
 
@@ -141,4 +152,6 @@ class MyTcpListener
             return null;
         }
     }
+
+
 }

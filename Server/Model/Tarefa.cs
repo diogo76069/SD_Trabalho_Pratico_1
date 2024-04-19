@@ -11,15 +11,22 @@ namespace Server.Model
         public string Id { get; set; }
         public string? Description { get; set; }
         public string State { get; set; }
-        public Client Cliente { get; set; }
+        public string ClienteId { get; set; }
 
         public Tarefa()
         {
             Description = null;
             State = "Nao alocado";
-            Cliente = null;
+            ClienteId = null;
         }
 
+        public Tarefa(string id, string desc, string state, string clientId )
+        {
+            Id = id;
+            Description = desc;
+            State = state;
+            ClienteId = clientId;
+        }
 
         public void UpdateState (string newState)
         {
@@ -30,21 +37,21 @@ namespace Server.Model
             return;
         }
 
-        public void AssignClient(Client novoCliente)
+        public void AssignClient(string novoId)
         {
-            if (Cliente == null) 
+            if (ClienteId == null) 
             { 
-                Cliente = novoCliente;
+                ClienteId = novoId;
             }
             return;
         }
 
-        public void UpdateTask(string newId, string newDesc, string newState, Client newClient)
+        public void UpdateTask(string newId, string newDesc, string newState, string newClient)
         {
             Id = newId;
             Description = newDesc;
             State = newState;
-            Cliente = newClient;
+            ClienteId = newClient;
         }
     }
 }
