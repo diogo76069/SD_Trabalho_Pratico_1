@@ -48,12 +48,15 @@ class MyTcpListener
     {
         Tarefa clientTask = new Tarefa();
 
-        //Enviar mensagem inicial (100 OK) pedido no protocolo
-        SendMessage("100 OK", stream);
-
-        // Estas variaveis servem para receber mensagens do cliente
         Byte[] buffer = new Byte[256];
-        int received;
+
+        int received = stream.Read(buffer, 0, buffer.Length);     
+        var receivede = Encoding.ASCII.GetString(buffer, 0, received);
+        Console.WriteLine("Received: {0}", receivede);
+
+
+        //Enviar mensagem inicial (100 OK) pedido no protocolo
+        SendMessage("100 OK", stream);      
 
         while ((received = stream.Read(buffer, 0, buffer.Length)) != 0)
         {
