@@ -7,10 +7,10 @@ class Client
 {
     public static void Main(string[] args)
     {
-        Connect("127.0.0.1");
+        Connect("127.0.0.1", "Cl_0001");
     }
 
-    static void Connect(String server)
+    static void Connect(String server, String id)
     {
         try
         {
@@ -24,6 +24,10 @@ class Client
 
             NetworkStream stream = client.GetStream();
 
+            var message = id;
+            byte[] msgBytes = Encoding.ASCII.GetBytes(message);
+            stream.Write(msgBytes, 0, msgBytes.Length);
+
             while (true)
             {
                 var received = stream.Read(buffer, 0, buffer.Length);
@@ -31,8 +35,8 @@ class Client
                 Console.WriteLine("Received: {0}", receivedMessage);
 
                 Console.Write("Send: ");
-                var message = Console.ReadLine();
-                byte[] msgBytes = Encoding.ASCII.GetBytes(message);
+                message = Console.ReadLine();
+                msgBytes = Encoding.ASCII.GetBytes(message);
                 stream.Write(msgBytes, 0, msgBytes.Length);
             }
         }

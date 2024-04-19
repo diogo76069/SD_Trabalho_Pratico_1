@@ -7,8 +7,13 @@
         public required string Id { get; set; }
         public string? Service { get; set; }
 
-        // Criar construtor
+        public Client()
+        {
+            Id = string.Empty;
+            Service = string.Empty;
+        }
 
+       
         // Criar método para atualizar o serviço, caso não tenha.
     }
 }
