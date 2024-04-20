@@ -1,9 +1,12 @@
 ﻿namespace Server.Model
 {
+    
     internal class Client 
     {
         public string Id { get; set; }
         public string? Service { get; set; }
+
+        private static Mutex mutex_cliente = new Mutex();
 
         public Client()
         {
@@ -19,8 +22,9 @@
 
         public Tarefa? FindCurrentTask()
         {
+            mutex_cliente.WaitOne();
             // Atenção! Deve ser verificado se o cliente tem serviço alocado antes de usar este método
-            string filePath = @$"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\{Service}.csv";
+            string filePath = @$"C:\Users\Pedro\Source\Repos\diogo76069\SD_Trabalho_Pratico_1\Server\Data\{Service}.csv";
 
             var reader = new StreamReader(filePath);
 
@@ -35,11 +39,13 @@
                     if (columns[2] != "Concluido") // Ignorar as tarefas concluidas
                     {
                         Tarefa currentTask = new Tarefa(columns[0], columns[1], columns[2], columns[3]);
+                        mutex_cliente.ReleaseMutex();
                         return currentTask;
                     }
                 }
             }
 
+            mutex_cliente.ReleaseMutex();
             return null;
         }
 

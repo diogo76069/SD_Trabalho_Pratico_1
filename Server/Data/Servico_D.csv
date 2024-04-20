@@ -1,0 +1,6 @@
+﻿TarefaID,Descricao,Estado,ClienteID
+SC_T1,Entregar pizza em Mouços,Concluido,Cl_0006
+SC_T2,Entregar pizza em Rua 1,Nao alocado,
+SC_T3,Entregar pizza na cidade,Nao alocado,
+SC_T4,Entregar pizza na Aucaria,Nao alocado,
+SC_T5,Entregar pizza na Camara Municipal,Nao alocado,

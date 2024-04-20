@@ -2,6 +2,8 @@
 {
     internal class Tarefa
     {
+        private static Mutex mutex_ficheiro = new Mutex();
+
         public string Id { get; set; }
         public string? Description { get; set; }
         public string State { get; set; }
@@ -24,6 +26,8 @@
 
         public int FinishTask(string service) // Dá para fazer isto sem o parâmetro ao usar o id da tarefa
         {
+            mutex_ficheiro.WaitOne();
+
             string filePath = @$"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\{service}.csv";
 
             string[] lines = File.ReadAllLines(filePath);
@@ -45,14 +49,17 @@
 
                 File.WriteAllLines(filePath, lines);
 
+                mutex_ficheiro.ReleaseMutex();
                 return 0;
             }
 
+            mutex_ficheiro.ReleaseMutex();
             return -1;
         }
 
         public int AssignClient(Client client) // Atribuir uma tarefa a um cliente
         {
+            mutex_ficheiro.WaitOne();
             if (client.Service.Any() == false) // É preciso alocar o cliente a um serviço
                 return -1;
 
@@ -82,10 +89,11 @@
 
                 File.WriteAllLines(filePath, lines);
 
-
+                mutex_ficheiro.ReleaseMutex();
                 return 0;
             }
 
+            mutex_ficheiro.ReleaseMutex();
             return -1; // Se não houverem tarefas disponíveis retorna -1
         }
 

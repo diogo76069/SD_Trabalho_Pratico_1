@@ -5,6 +5,7 @@ using System.Text;
 
 class Client
 {
+
     public static void Main(string[] args)
     {
         Connect("127.0.0.1", "Cl_0001");

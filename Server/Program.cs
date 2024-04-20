@@ -5,6 +5,7 @@ using System.Text;
 
 class MyTcpListener
 {
+    private static Mutex mutex_ficheiro = new Mutex();
     public static void Main()
     {
         TcpListener server = null;
@@ -24,10 +25,12 @@ class MyTcpListener
                 using TcpClient client = server.AcceptTcpClient();
                 Console.WriteLine("Connected.");
 
-                NetworkStream stream = client.GetStream();
 
                 // Método para comunicar com o cliente
-                HandleClient(client, stream);
+                //HandleClient(client);
+                Thread clientThread = new Thread(() => Main());
+                clientThread.Start();
+                HandleClient(client);
             }
         }
         catch (SocketException e)
@@ -42,9 +45,11 @@ class MyTcpListener
         Console.Read();
     }
     
-    static void HandleClient(TcpClient client, NetworkStream stream) 
+
+    static void HandleClient(TcpClient client) 
     {
 
+        NetworkStream stream = client.GetStream();
         string message = "100 OK";
 
         //Manda mensagem "100 OK" inicial estabalecida no protocolo
@@ -150,7 +155,8 @@ class MyTcpListener
 
     static Client? FindClient(string clientId)
     {
-        string filePath = @"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv";
+        mutex_ficheiro.WaitOne();
+        string filePath = @"C:\Users\Pedro\Source\Repos\diogo76069\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv";
         string[] lines = File.ReadAllLines(filePath);
 
         string clientLine = lines.FirstOrDefault(line => line.StartsWith($"{clientId},"));
@@ -161,12 +167,14 @@ class MyTcpListener
 
             Client foundClient = new Client(columns[0], columns[1]);
 
+            mutex_ficheiro.ReleaseMutex();
             return foundClient;
         }
         else
         {
+            mutex_ficheiro.ReleaseMutex();
             return null;
-        }
+        }     
     }
 
 
