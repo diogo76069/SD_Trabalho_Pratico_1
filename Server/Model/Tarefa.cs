@@ -28,7 +28,9 @@
         {
             mutex_ficheiro.WaitOne();
 
-            string filePath = @$"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\{service}.csv";
+            string workingDirectory = Environment.CurrentDirectory;
+            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+            string filePath = @$"{projectDirectory}\Data\{service}.csv";
 
             string[] lines = File.ReadAllLines(filePath);
 
@@ -63,7 +65,9 @@
             if (client.Service.Any() == false) // É preciso alocar o cliente a um serviço
                 return -1;
 
-            string filePath = @$"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\{client.Service}.csv";
+            string workingDirectory = Environment.CurrentDirectory;
+            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+            string filePath = @$"{projectDirectory}\Data\{client.Service}.csv";
 
             string[] lines = File.ReadAllLines(filePath);
 

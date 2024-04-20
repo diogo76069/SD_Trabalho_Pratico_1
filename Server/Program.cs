@@ -17,7 +17,6 @@ class MyTcpListener
             server = new TcpListener(localAddr, port);
             server.Start();
 
-
             while (true)
             {
                 Console.Write("Waiting for a connection... ");
@@ -25,11 +24,8 @@ class MyTcpListener
                 using TcpClient client = server.AcceptTcpClient();
                 Console.WriteLine("Connected.");
 
-
-                // Método para comunicar com o cliente
-                //HandleClient(client);
-                Thread clientThread = new Thread(() => Main());
-                clientThread.Start();
+                //Thread clientThread = new Thread(() => Main());
+                //clientThread.Start();
                 HandleClient(client);
             }
         }
@@ -44,7 +40,6 @@ class MyTcpListener
         Console.WriteLine("\nHit enter to continue...");
         Console.Read();
     }
-    
 
     static void HandleClient(TcpClient client) 
     {
@@ -61,31 +56,36 @@ class MyTcpListener
         var receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
         Console.WriteLine("Received: {0}", receivedMessage);
 
-        //Recebe um Client se encontrar e null se não encontrar
+        // É passado o id recebido pelo cliente como parâmetro
+        // Recebe um Client se encontrar e null se não encontrar 
         var currentClient = FindClient(receivedMessage);
         Tarefa? clientTask = null;
 
+        // Se o cliente existir mostra tarefa atual (se tiver) senão termina conexão
         if (currentClient != null)
         {
             if(currentClient.Service.Any())
             {
+                // Verifica se tem alguma tarefa em curso
                 if((clientTask = currentClient.FindCurrentTask()) != null)
                 {
                     message = $"Current task: {clientTask.Description}";
                 }
                 else
                 {
-                    message = "Current task: Unassigned. Use 'TASK NEW' to assign a new task.";
+                    message = "Current task: Unassigned. Use 'TASK NEW' to receive a new task.";
                 }
             }
             else
             {
-                message = "No service found"; // Mudar isto para atribuir um serviço novo automaticamente se houver tempo
+                // É associado ao serviço com menos clientes se não tiver alocado
+                AssignService(currentClient);
+                message = $"Assigned to service {currentClient.Service}. User 'TASK NEW' to receive your first task.";
             }
 
             SendMessage(message, stream);
         }
-        else // Por enquanto termina a conexão se O cliente não existir. Talvez adicionar maneira de criar um novo»
+        else // Termina conexão se não reconhecer o cliente
         {
             SendMessage("Unrecognized client. 400 BYE", stream);
             client.Close();
@@ -93,7 +93,7 @@ class MyTcpListener
             return;
         }
   
-
+        // Após validar o id e associar serviço se necessário, aguarda comandos
         while ((received = stream.Read(buffer, 0, buffer.Length)) != 0)
         {
             receivedMessage = Encoding.ASCII.GetString(buffer, 0, received);
@@ -104,7 +104,8 @@ class MyTcpListener
             switch (receivedMessage)
             {
                 case "TASK NEW":
-                    if(clientTask == null) // O cliente não deve ter uma tarefa em curso
+                    // Para pedir uma nova tarefa não pode ter nenhuma em curso
+                    if(clientTask == null)
                     {
                         clientTask = new Tarefa();
                         if(clientTask.AssignClient(currentClient) == 0)
@@ -119,6 +120,7 @@ class MyTcpListener
 
                     break;
                 case "TASK COMPLETED":
+                    // Apenas pode declarar uma tarefa como concluida se tiver uma tarefa em curso
                     if(clientTask != null)
                     {
                         if (clientTask.FinishTask(currentClient.Service) == 0)
@@ -133,6 +135,7 @@ class MyTcpListener
 
                     break;
                 case "QUIT":
+                    //Manda mensagem 400 BYE pedida no protocolo
                     SendMessage("400 BYE", stream);
                     client.Close();
                     stream.Close();
@@ -146,22 +149,27 @@ class MyTcpListener
         }
     }
 
-    static void SendMessage(string message, NetworkStream stream) //Metodo para mandar mensagem ao cliente
+    // Metodo para mandar mensagem ao cliente
+    static void SendMessage(string message, NetworkStream stream)
     {
         byte[] msgBytes = Encoding.ASCII.GetBytes(message);
         stream.Write(msgBytes, 0, msgBytes.Length);
         Console.WriteLine("Sent: {0}", message);
     }
 
+    // Metodo para verificar se o cliente existe, procurando pelo id recebido
     static Client? FindClient(string clientId)
     {
         mutex_ficheiro.WaitOne();
-        string filePath = @"C:\Users\Pedro\Source\Repos\diogo76069\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv";
+
+        string workingDirectory = Environment.CurrentDirectory;
+        string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+        string filePath = @$"{projectDirectory}\Data\Alocacao_Cliente_Servico.csv";
         string[] lines = File.ReadAllLines(filePath);
 
         string clientLine = lines.FirstOrDefault(line => line.StartsWith($"{clientId},"));
 
-        if (clientLine != null)
+        if (clientLine != null) // Se o cliente existir é retornado um objeto da classe cliente
         {
             string[] columns = clientLine.Split(',');
 
@@ -170,12 +178,98 @@ class MyTcpListener
             mutex_ficheiro.ReleaseMutex();
             return foundClient;
         }
-        else
+        else // Se o cliente não existir retorna null
         {
             mutex_ficheiro.ReleaseMutex();
             return null;
         }     
     }
 
+    // Metodo para alocar um serviço ao cliente, caso não esteja alocado
+    static int AssignService(Client userClient)
+    {
+        string service = GetLeastAssignedService();
 
+        string workingDirectory = Environment.CurrentDirectory;
+        string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+        string filePath = @$"{projectDirectory}\Data\Alocacao_Cliente_Servico.csv";
+
+        string[] lines = File.ReadAllLines(filePath);
+
+        int clientLine = Array.FindIndex(lines, line => line.StartsWith($"{userClient.Id},"));
+
+        if (clientLine != -1)
+        {
+            string line = lines[clientLine];
+
+            string[] colunas = line.Split(",");
+
+            colunas[1] = service;
+
+            userClient.Service = colunas[1];
+
+            line = string.Join(",", colunas);
+            lines[clientLine] = line;
+
+            File.WriteAllLines(filePath, lines);
+
+            return 0;
+        }
+        return 1;
+    }
+
+    // Este método devolve uma string com o servico que tem menos clientes
+    static string GetLeastAssignedService()
+    {
+        string service = "Servico_A";
+
+        string filePath = @"D:\Universidade\3ºAno\2º Semestre\Sistemas Distribuidos\SD_Trabalho_Pratico_1\Server\Data\Alocacao_Cliente_Servico.csv";
+        string[] lines = File.ReadAllLines(filePath);
+
+        int cA = 0;
+        int cB = 0;
+        int cC = 0;
+        int cD = 0;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            string?[] columns = line.Split(",");
+
+            int len = columns.Length;
+
+            if (columns.Length == 2)
+            {
+                switch (columns[1])
+                {
+                    case "Servico_A":
+                        cA = cA + 1;
+                        break;
+                    case "Servico_B":
+                        cB = cB + 1;
+                        break;
+                    case "Servico_C":
+                        cC = cC + 1;
+                        break;
+                    case "Servico_D":
+                        cD = cD + 1;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        int min = Math.Min(Math.Min(Math.Min(cA, cB), cC), cD);
+
+        if (min == cB)
+            service = "Servico_B";
+
+        if (min == cC)
+            service = "Servico_C";
+
+        if (min == cD)
+            service = "Servico_D";
+
+        return service;
+    }
 }

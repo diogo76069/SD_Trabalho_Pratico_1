@@ -23,8 +23,10 @@
         public Tarefa? FindCurrentTask()
         {
             mutex_cliente.WaitOne();
-            // Atenção! Deve ser verificado se o cliente tem serviço alocado antes de usar este método
-            string filePath = @$"C:\Users\Pedro\Source\Repos\diogo76069\SD_Trabalho_Pratico_1\Server\Data\{Service}.csv";
+
+            string workingDirectory = Environment.CurrentDirectory;
+            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+            string filePath = @$"{projectDirectory}\Data\{Service}.csv";
 
             var reader = new StreamReader(filePath);
 
